@@ -1,0 +1,451 @@
+%% rpg-1e-stats.sty
+%
+% Advanced First Edition stat blocks for the Role-Playing Game Module class
+%
+% Copyright 2017 Michael C. Davis
+%
+% LICENSE FOR THE WORK
+%
+% This work consists of the following files:
+%    rpg-module.cls
+%    rpg-basic-stats.sty
+%    rpg-basic-stats.def
+%    rpg-1e-stats.sty
+%    rpg-1e-stats.def
+%    doc/rpg-module.tex
+%
+% This work may be distributed and/or modified under the conditions of the LaTeX
+% Project Public License, either version 1.3 of this license or (at your option)
+% any later version. The latest version of this license can be found at:
+% http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX version
+% 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status `author-maintained'.
+% 
+% The Author and Maintainer of this work is Michael C. Davis
+%
+%
+% LICENSE FOR COMPILED WORKS
+%
+% You may distribute compiled works generated using the work as specified in
+% Clause 3 of the LaTeX Project Public License. If you incorporate Open Gaming
+% Content into the compiled work, you must also comply with the terms of that
+% license.
+%
+%
+% USAGE
+%
+% See the file rpg-module.pdf (source file doc/rpg-module.tex) for documentation. 
+% There are a number of worked examples in the examples/ directory.
+%
+% Technical support is provided on GitHub:
+%
+%    https://github.com/slithy/rpg_module
+%
+% and on the Dragonsfoot Forums:
+%
+%    http://www.dragonsfoot.org/forums/viewtopic.php?f=87&t=73823
+
+\ProvidesPackage{rpg-1e-stats}[2017/05/06 Advanced First Edition Stat Blocks for the Role-Playing Game Module class]
+
+\RequirePackage{tabularx}
+\RequirePackage{multirow}
+
+\@ifpackagelater{multirow}{2016/09/27}{}{%
+\PackageError{rpg-1e-stats}{Package multirow must be version 2.0 or later}{Download the latest version from https://www.ctan.org/pkg/multirow}%
+}
+
+
+
+% Redefine which environment will be displayed
+\includecomment{if1estats}
+
+% Armour class macro
+%
+% The default for Advanced First Edition stats is to use descending AC as in the
+% First Edition/OSRIC rulebooks. However, three alternative styles are defined:
+% ascending AC style, B1 style and Swords & Wizardry style.
+
+\newcounter{acasc@module}                                                       % Counter for AC calculations
+
+\newcommand\ac@module[1]{%
+   \@ifundefined{acstyle@module}{\gdef\acstyle@module{desc}}{}%                 % Default AC style is descending
+   \ifnum\pdfstrcmp{\acstyle@module}{desc}=\z@                                  % Display descending AC
+      #1\ignorespaces
+   \else\ifnum\pdfstrcmp{#1}{---}=\z@
+      #1\ignorespaces
+   \else%
+      \setcounter{acasc@module}{20}%
+      \IfSubStr{#1}{\,}{\StrBefore{#1}{\,}[\tmpac]}{\def\tmpac{#1}}%
+      \IfBeginWith{\tmpac}{\minus}{%
+         \StrBehind{\tmpac}{\minus}[\tmpac]%
+         \addtocounter{acasc@module}{\tmpac}%
+      }{%
+         \addtocounter{acasc@module}{-\tmpac}%
+      }%
+      \ifnum\pdfstrcmp{\acstyle@module}{asc}=\z@                                % Display ascending AC
+         \theacasc@module\ignorespaces
+      \else\ifnum\pdfstrcmp{\acstyle@module}{b1}=\z@                            % Display AC using B1 notation
+         #1/\theacasc@module\ignorespaces
+      \else\ifnum\pdfstrcmp{\acstyle@module}{sw}=\z@                            % Display AC using Swords & Wizardry notation
+         #1\,(\theacasc@module)\ignorespaces
+      \else
+         Unknown AC style \acstyle@module
+      \fi\fi\fi
+   \fi\fi
+}
+
+% Hit Dice : convert short form to long form for stat blocks
+
+\newcommand\hd@module[1]{\IfBeginWith{#1}{\half}{#1 (1--4 hit points)}{#1}}
+
+% Size : convert long form to short form for stat blocks
+
+\newcommand\sz@module[1]{\StrLeft{#1}{1}}
+
+% Alignment macro : convert long form to short form for stat blocks
+
+\newcommand\al@module[1]{%
+   \StrPosition{#1}{ }[\spacepos]%
+   \ifnum\spacepos=0
+      N% defaults to Neutral if alignment is 'Any', 'Variable', etc.
+   \else
+      \StrGobbleLeft{#1}{\spacepos}[\secondword]%
+      \StrLeft{#1}{1}\StrLeft{\secondword}{1}%
+   \fi
+}
+
+% Change alignment macro, for monsters with Alignment ``Any'' or ``Variable''
+
+\newcommand{\changealignment}[2]{\pgfkeys{/#1/AL = {#2}}}
+
+
+
+% Advanced stat block key-value pairs
+%
+% Format is:
+%
+% \monster{key}[Name, Plural]{Name, Singular}{Type|THAC0|AC|MV|HD|Attacks|Dmg|Dmglong|SA|SD|MR|SZ|Int|AL|Psi|PsiAtt|Frequency|NoAppear|InLair|TT|Level|XP}
+
+\newcommand{\setstatadvanced}[2]{%
+   \ifcase\thecurrentstat
+      \pgfkeys{/#1/Type/.initial        = {#2}}
+   \or
+      \pgfkeys{/#1/THAC0/.initial       = {#2}}
+   \or
+      \pgfkeys{/#1/AC/.initial          = \ac@module{#2}}
+   \or
+      \pgfkeys{/#1/MV/.initial          = {#2}}
+   \or
+      \pgfkeys{/#1/HD/.initial          = {#2}}
+      \pgfkeys{/#1/HDlong/.initial      = \hd@module{#2}}
+   \or
+      \pgfkeys{/#1/Attacks/.initial     = {#2}}
+   \or
+      \pgfkeys{/#1/Dmglong/.initial     = {#2}}
+   \or
+      \pgfkeys{/#1/Dmg/.initial         = {#2}}
+   \or
+      \pgfkeys{/#1/SA/.initial          = {#2}}
+   \or
+      \pgfkeys{/#1/SD/.initial          = {#2}}
+   \or
+      \pgfkeys{/#1/MR/.initial          = {#2}}
+   \or
+      \pgfkeys{/#1/Special/.initial     = {#2}}
+   \or
+      \pgfkeys{/#1/SZ/.initial          = \sz@module{#2}}
+      \pgfkeys{/#1/SZlong/.initial      = {#2}}
+   \or
+      \pgfkeys{/#1/Int/.initial         = {#2}}
+   \or
+      \pgfkeys{/#1/AL/.initial          = \al@module{#2}}
+      \pgfkeys{/#1/ALlong/.initial      = {#2}}
+   \or
+      \pgfkeys{/#1/Psi/.initial         = {#2}}
+   \or
+      \pgfkeys{/#1/PsiAtt/.initial      = {#2}}
+   \or
+      \pgfkeys{/#1/Frequency/.initial   = {#2}}
+   \or
+      \pgfkeys{/#1/NoAppear/.initial    = {#2}}
+   \or
+      \pgfkeys{/#1/InLair/.initial      = {#2}}
+   \or
+      \pgfkeys{/#1/TT/.initial          = {#2}}
+   \or
+      \pgfkeys{/#1/Level/.initial       = {#2}}
+   \or
+      \pgfkeys{/#1/XP/.initial          = {#2}}
+   \fi
+}
+
+% Define monsters using \setstat1e
+
+\def\scan@stats#1|{%
+   \ifnum\pdfstrcmp{#1}{\relax}=\z@
+      \let\next\relax
+   \else
+      \setstatadvanced{\currentmonster}{#1}\let\next\scan@stats
+      \stepcounter{currentstat}
+  \fi\next
+}
+
+
+
+% Display monster stats inline
+%
+% Usage: \stats[monster name]{monster key}{no. appearing}{hit points}
+
+% Default to longstats
+
+\newcommand{\stats}{\longstats}
+
+% Define long stat format
+
+\newcommand{\longstats}[4][default]{%
+   \ifnum\pdfstrcmp{#1}{default}=\z@
+      \ifnum\pdfstrcmp{#3}{1}=\z@
+         \pgfkeys{/#2/SingleName}:               % Use the generic name defined for this monster (single instance)
+      \else
+         \pgfkeys{/#2/PluralName} (#3):          % Use the generic name defined for this monster (plural + number appearing)
+      \fi
+   \else
+      #1                                         % Override the generic name with the optional argument
+   \fi
+   AC~\pgfkeys{/#2/AC},
+   MV~\pgfkeys{/#2/MV},
+   THAC0~\pgfkeys{/#2/THAC0},
+   HD~\pgfkeys{/#2/HD},
+   hp~#4,
+   \#AT~\pgfkeys{/#2/Attacks},
+   D~\pgfkeys{/#2/Dmglong},
+   SA~\pgfkeys{/#2/SA},
+   SD~\pgfkeys{/#2/SD},
+   MR~\pgfkeys{/#2/MR},
+   SZ~\pgfkeys{/#2/SZ},
+   AL~\pgfkeys{/#2/AL},
+   XP~\pgfkeys{/#2/XP}%
+}
+
+% Define short stat format
+
+\newcommand{\shortstats}[4][default]{%
+   \ifnum\pdfstrcmp{#1}{default}=\z@
+      \ifnum\pdfstrcmp{#3}{1}=\z@
+         \pgfkeys{/#2/SingleName}:               % Use the generic name defined for this monster (single instance)
+      \else
+         \pgfkeys{/#2/PluralName} (#3):          % Use the generic name defined for this monster (plural + number appearing)
+      \fi
+   \else
+      #1                                         % Override the generic name with the optional argument
+   \fi
+   AC~\pgfkeys{/#2/AC},
+   HD~\pgfkeys{/#2/HD},
+   hp~#4,
+   \#AT~\pgfkeys{/#2/Attacks},
+   D~\pgfkeys{/#2/Dmg}%
+   \ifnum\pdfstrcmp{\pgfkeysvalueof{/#2/Special}}{}=\z@\else
+      , \pgfkeys{/#2/Special}%
+   \fi
+}
+
+% Display monster stats in a stat block
+%
+% Usage: \statblock[monster name]{monster key}{no. appearing}{hit points}
+
+\newcommand{\statblock}[4][default]{%
+   \begin{statblockfreestyle}
+   \stats[#1]{#2}{#3}{#4}
+   \end{statblockfreestyle}
+}
+
+
+
+% Table display format for wandering monsters
+
+\newcounter{wandering@module}
+
+\newenvironment{wanderingmonsters}[1][c]{\begingroup\tabularx{\linewidth}{clcccccccXc}
+\setcounter{wandering@module}{0}%
+\tableheader[#1]{Die Roll & Wandering Monster & No. & AC & MV & THAC0 & HD & \#AT & Damage & Special & AL}}
+{\endtabularx\endgroup}
+
+% Usage: \wanderitem[die roll]{monster key}{no. appearing}
+%
+% Leave no. appearing blank to use the value from the monster stats
+
+\newcommand{\wanderitem}[3][default]{%
+   \ifnum\pdfstrcmp{#1}{default}=\z@
+      \stepcounter{wandering@module}\thewandering@module
+   \else
+      \IfInteger{#1}{\setcounter{wandering@module}{#1}\thewandering@module}{#1}
+   \fi &
+   \IfStrEq{#3}{}{%
+      \if\pgfkeysvalueof{/#2/NoAppear}\string 1\pgfkeys{/#2/SingleName}\else\pgfkeys{/#2/PluralName}\fi & \pgfkeys{/#2/NoAppear} &
+   }{%
+      \ifnum\pdfstrcmp{#3}{1}=\z@\pgfkeys{/#2/SingleName}\else\pgfkeys{/#2/PluralName}\fi & #3 &
+   }
+   \pgfkeys{/#2/AC} & \pgfkeys{/#2/MV} & \pgfkeys{/#2/THAC0} & \pgfkeys{/#2/HD} & \pgfkeys{/#2/Attacks} & \pgfkeys{/#2/Dmg} & \pgfkeys{/#2/Special} & \pgfkeys{/#2/AL}\\
+}
+
+
+
+% Table display format for monster roster
+
+\newenvironment{monsterroster}[1][c]{\begingroup\tabularx{\linewidth}{clccccccccXc}
+\tableheader[#1]{Room & Monster & No. & AC & MV & THAC0 & HD & hp & \#AT & Damage & Special & AL}}
+{\endtabularx\endgroup}
+
+% Usage: \rosteritem{room key}{monster key}{no. appearing}{hit points}
+%
+% If the room key is provided as a reference, the class will create a hyperlink from the monster
+% roster to the room description
+
+\newcommand{\rosteritem}[4]{%
+   #1 &
+   \ifnum\pdfstrcmp{#3}{1}=\z@
+      \pgfkeys{/#2/SingleName} &
+   \else
+      \pgfkeys{/#2/PluralName} &
+   \fi
+   #3 & \pgfkeys{/#2/AC} & \pgfkeys{/#2/MV} & \pgfkeys{/#2/THAC0} & \pgfkeys{/#2/HD} & #4 & \pgfkeys{/#2/Attacks} & \pgfkeys{/#2/Dmg} & \pgfkeys{/#2/Special} & \pgfkeys{/#2/AL}\\
+}
+
+
+
+%
+% New Monster environment
+%
+
+\newcommand{\newmonsterfont}{\Large\bfseries}
+\newcommand{\newmonsterbottomskip}{\topskip}
+
+\newcommand{\longname}[1]{%
+   \ifnum\pdfstrcmp{\pgfkeysvalueof{/#1/Type}}{}=\z@
+      \pgfkeysvalueof{/#1/SingleName}%
+   \else\ifnum\pdfstrcmp{\pgfkeysvalueof{/#1/Type}}{\pgfkeysvalueof{/#1/SingleName}}=\z@
+      \pgfkeysvalueof{/#1/SingleName}%
+   \else
+      \pgfkeysvalueof{/#1/Type}, \texorpdfstring{\protect\StrDel{\pgfkeysvalueof{/#1/SingleName}}{ \pgfkeysvalueof{/#1/Type}}}{}%
+   \fi\fi
+}
+
+\newenvironment{newmonster}[2][\empty]{%
+\def\hangingindent{\leftskip 2em\parindent -2em}
+\@afterindentfalse\@afterheading\vspace{\topskip}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}Xc@{}}
+\multicolumn{2}{l}{\hspace{-\tabcolsep}\newmonsterfont\longname{#2}%
+\phantomsection\addcontentsline{toc}{section}{\longname{#2}}}\\[\topskip]
+\hangingindent FREQUENCY: \pgfkeys{/#2/Frequency} & \if#1\empty\else%
+\multirow[t]{18}{*}[8pt]{\raisebox{-\height}{\includegraphics[width=0.5\linewidth]{#1}}}%
+\fi\\
+\hangingindent NO.\,APPEARING: \pgfkeys{/#2/NoAppear}\\
+\hangingindent \MakeUppercase{\ArmourClass}: \pgfkeys{/#2/AC}\\
+\hangingindent MOVE: \pgfkeys{/#2/MV}\\
+\hangingindent HIT DICE: \pgfkeys{/#2/HDlong}\\
+\hangingindent \% IN LAIR: \pgfkeys{/#2/InLair}\\
+\hangingindent TREASURE TYPE: \pgfkeys{/#2/TT}\\
+\hangingindent NO.\,OF ATTACKS: \pgfkeys{/#2/Attacks}\\
+\hangingindent DAMAGE/ATTACK: \pgfkeys{/#2/Dmglong}\\
+\hangingindent SPECIAL ATTACKS: \pgfkeys{/#2/SA}\\
+\hangingindent SPECIAL DEFENSES: \pgfkeys{/#2/SD}\\
+\hangingindent MAGIC RESISTANCE: \pgfkeys{/#2/MR}\\
+\hangingindent INTELLIGENCE: \pgfkeys{/#2/Int}\\
+\hangingindent ALIGNMENT: \pgfkeys{/#2/ALlong}\\
+\hangingindent SIZE: \pgfkeys{/#2/SZlong}\\
+\hangingindent PSIONIC ABILITY: \pgfkeys{/#2/Psi}\\
+\hangingindent \qquad Attack/Defense Modes: \pgfkeys{/#2/PsiAtt}\\
+\hangingindent LEVEL/X.P.\,VALUE: \pgfkeys{/#2/Level}/\pgfkeys{/#2/XP}\\
+\end{tabularx}\par\vspace{\newmonsterbottomskip}\noindent\ignorespaces}{\vspace{\newmonsterbottomskip}\par\aftergroup\@afterindentfalse\aftergroup\@afterheading}
+
+% Two-column version
+
+\newenvironment{newmonster2*}[3]{%
+\@afterindentfalse\@afterheading\vspace{\topskip}
+\begin{tabularx}{\linewidth}{@{}l>{\centering\arraybackslash}X>{\centering\arraybackslash}X@{}}
+\ifnum\pdfstrcmp{#3}{}=\z@\else
+\multicolumn{3}{l}{\hspace{-\tabcolsep}\newmonsterfont#3%
+\phantomsection\addcontentsline{toc}{section}{#3}}\\[\newmonsterbottomskip]
+\fi
+ & \ifnum\pdfstrcmp{\pgfkeysvalueof{/#1/Type}}{\pgfkeysvalueof{/#1/SingleName}}=\z@
+   Normal
+\fi\pgfkeys{/#1/SingleName}                                         & \pgfkeys{/#2/SingleName}\\
+\cmidrule(l{\tabcolsep}r{\tabcolsep}){2-2}
+\cmidrule(l{\tabcolsep}r{\tabcolsep}){3-3}
+FREQUENCY:                    & \pgfkeys{/#1/Frequency}              & \pgfkeys{/#2/Frequency}\\
+NO.\,APPEARING:               & \pgfkeys{/#1/NoAppear}               & \pgfkeys{/#2/NoAppear}\\
+\MakeUppercase{\ArmourClass}: & \pgfkeys{/#1/AC}                     & \pgfkeys{/#2/AC}\\
+MOVE:                         & \pgfkeys{/#1/MV}                     & \pgfkeys{/#2/MV}\\
+HIT DICE:                     & \pgfkeys{/#1/HDlong}                 & \pgfkeys{/#2/HDlong}\\
+\% IN LAIR:                   & \pgfkeys{/#1/InLair}                 & \pgfkeys{/#2/InLair}\\
+TREASURE TYPE:                & \pgfkeys{/#1/TT}                     & \pgfkeys{/#2/TT}\\
+NO.\,OF ATTACKS:              & \pgfkeys{/#1/Attacks}                & \pgfkeys{/#2/Attacks}\\
+DAMAGE/ATTACK:                & \pgfkeys{/#1/Dmglong}                & \pgfkeys{/#2/Dmglong}\\
+SPECIAL ATTACKS:              & \pgfkeys{/#1/SA}                     & \pgfkeys{/#2/SA}\\
+SPECIAL DEFENSES:             & \pgfkeys{/#1/SD}                     & \pgfkeys{/#2/SD}\\
+MAGIC RESISTANCE:             & \pgfkeys{/#1/MR}                     & \pgfkeys{/#2/MR}\\
+INTELLIGENCE:                 & \pgfkeys{/#1/Int}                    & \pgfkeys{/#2/Int}\\
+ALIGNMENT:                    & \pgfkeys{/#1/ALlong}                 & \pgfkeys{/#2/ALlong}\\
+SIZE:                         & \pgfkeys{/#1/SZlong}                 & \pgfkeys{/#2/SZlong}\\
+PSIONIC ABILITY:              & \pgfkeys{/#1/Psi}                    & \pgfkeys{/#2/Psi}\\
+\quad Attack/Defense:         & \pgfkeys{/#1/PsiAtt}                 & \pgfkeys{/#2/PsiAtt}\\
+LEVEL/X.P.\,VALUE:            & \pgfkeys{/#1/Level}/\pgfkeys{/#1/XP} & \pgfkeys{/#2/Level}/\pgfkeys{/#1/XP}\\
+\end{tabularx}\par\vspace{\newmonsterbottomskip}\noindent\ignorespaces}{\vspace{\newmonsterbottomskip}\par\aftergroup\@afterindentfalse\aftergroup\@afterheading}
+
+\newenvironment{newmonster2}[2]{\begin{newmonster2*}{#1}{#2}{\pgfkeysvalueof{/#1/Type}}{\pgfkeysvalueof{/#1/SilverMagic}}}{\end{newmonster2*}}
+
+% Three-column version
+
+\newenvironment{newmonster3*}[4]{%
+\@afterindentfalse\@afterheading\vspace{\topskip}
+\begin{tabularx}{\linewidth}{@{}l>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X@{}}
+\ifnum\pdfstrcmp{#4}{}=\z@\else
+\multicolumn{4}{l}{\hspace{-\tabcolsep}\newmonsterfont#4%
+\phantomsection\addcontentsline{toc}{section}{#4}}\\[\newmonsterbottomskip]
+\fi
+ & \ifnum\pdfstrcmp{\pgfkeysvalueof{/#1/Type}}{\pgfkeysvalueof{/#1/SingleName}}=\z@
+   Normal
+\fi\pgfkeys{/#1/SingleName}                                      & \pgfkeys{/#2/SingleName} & \pgfkeys{/#3/SingleName}\\
+\cmidrule(l{\tabcolsep}r{\tabcolsep}){2-2}
+\cmidrule(l{\tabcolsep}r{\tabcolsep}){3-3}
+\cmidrule(l{\tabcolsep}r{\tabcolsep}){4-4}
+FREQUENCY:                    & \pgfkeys{/#1/Frequency} & \pgfkeys{/#2/Frequency} & \pgfkeys{/#3/Frequency}\\
+NO.\,APPEARING:               & \pgfkeys{/#1/NoAppear}  & \pgfkeys{/#2/NoAppear}  & \pgfkeys{/#3/NoAppear}\\
+\MakeUppercase{\ArmourClass}: & \pgfkeys{/#1/AC}        & \pgfkeys{/#2/AC}        & \pgfkeys{/#3/AC}\\
+MOVE:                         & \pgfkeys{/#1/MV}        & \pgfkeys{/#2/MV}        & \pgfkeys{/#3/MV}\\
+HIT DICE:                     & \pgfkeys{/#1/HDlong}    & \pgfkeys{/#2/HDlong}    & \pgfkeys{/#3/HDlong}\\
+\% IN LAIR:                   & \pgfkeys{/#1/InLair}    & \pgfkeys{/#2/InLair}    & \pgfkeys{/#3/InLair}\\
+TREASURE TYPE:                & \pgfkeys{/#1/TT}        & \pgfkeys{/#2/TT}        & \pgfkeys{/#3/TT}\\
+NO.\,OF ATTACKS:              & \pgfkeys{/#1/Attacks}   & \pgfkeys{/#2/Attacks}   & \pgfkeys{/#3/Attacks}\\
+DAMAGE/ATTACK:                & \pgfkeys{/#1/Dmglong}   & \pgfkeys{/#2/Dmglong}   & \pgfkeys{/#3/Dmglong}\\
+SPECIAL ATTACKS:              & \pgfkeys{/#1/SA}        & \pgfkeys{/#2/SA}        & \pgfkeys{/#3/SA}\\
+SPECIAL DEFENSES:             & \pgfkeys{/#1/SD}        & \pgfkeys{/#2/SD}        & \pgfkeys{/#3/SD}\\
+MAGIC RESISTANCE:             & \pgfkeys{/#1/MR}        & \pgfkeys{/#2/MR}        & \pgfkeys{/#3/MR}\\
+INTELLIGENCE:                 & \pgfkeys{/#1/Int}       & \pgfkeys{/#2/Int}       & \pgfkeys{/#3/Int}\\
+ALIGNMENT:                    & \pgfkeys{/#1/ALlong}    & \pgfkeys{/#2/ALlong}    & \pgfkeys{/#3/ALlong}\\
+SIZE:                         & \pgfkeys{/#1/SZlong}    & \pgfkeys{/#2/SZlong}    & \pgfkeys{/#3/SZlong}\\
+PSIONIC ABILITY:              & \pgfkeys{/#1/Psi}       & \pgfkeys{/#2/Psi}       & \pgfkeys{/#3/Psi}\\
+\quad Attack/Defense:         & \pgfkeys{/#1/PsiAtt}    & \pgfkeys{/#2/PsiAtt}    & \pgfkeys{/#3/PsiAtt}\\
+LEVEL/X.P.\,VALUE:            & \pgfkeys{/#1/Level}/\pgfkeys{/#1/XP} & \pgfkeys{/#2/Level}/\pgfkeys{/#1/XP} & \pgfkeys{/#3/Level}/\pgfkeys{/#1/XP}\\
+\end{tabularx}\par\vspace{\newmonsterbottomskip}\noindent\ignorespaces}{\vspace{\newmonsterbottomskip}\par\aftergroup\@afterindentfalse\aftergroup\@afterheading}
+
+\newenvironment{newmonster3}[3]{\begin{newmonster3*}{#1}{#2}{#3}{\pgfkeysvalueof{/#1/Type}}{\pgfkeysvalueof{/#1/SilverMagic}}}{\end{newmonster3*}}
+
+
+
+% A few special macros for stat blocks
+
+\newcommand\x{$\times$}                                                         % Text-mode multiplication symbol
+\newcommand\minus{$-$}                                                          % Text-mode minus sign
+\newcommand{\?}{\discretionary{/}{}{/}}                                         % Breaking slash
+\newcommand{\+}{\discretionary{\,+}{}{\,+\,}}                                   % Breaking + with 1/6 em space either side
+
+
+
+%
+% Load pre-defined monster stats
+%
+
+\input{rpg-1e-stats.def}
