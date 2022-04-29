@@ -1,4 +1,4 @@
-# writeapaper
+# latex-rpg
 
 This is a template repository to write & typeset RPG documents with latex. 
 
