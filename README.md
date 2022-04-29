@@ -1,8 +1,8 @@
 # writeapaper
 
-This is a template repository to write scientific papers with latex. 
+This is a template repository to write & typeset RPG documents with latex. 
 
-First pick your journal from the `template` directory and copy its content into `draft`.  A github action will compile the paper at every commit. The latest version is made available at this permanent URL
+First pick your style from the `template` directory and copy its content into `draft`.  A github action will compile the paper at every commit. The latest version is made available at this permanent URL
 
 > [github.com/dgerosa/writeapaper/blob/build/draft.pdf](https://github.com/dgerosa/writeapaper/blob/build/draft.pdf)
 
